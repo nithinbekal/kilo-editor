@@ -10,6 +10,9 @@
 struct termios orig_termios;
 
 void die(const char* s) {
+  write(STDOUT_FILENO, "\x1b[2J", 4);
+  write(STDOUT_FILENO, "\x1b[H", 3);
+
   perror(s);
   exit(1);
 }
@@ -55,6 +58,9 @@ void editorProcessKeyPress() {
 
   switch (c) {
   case CTRL_KEY('q'):
+    write(STDOUT_FILENO, "\x1b[2J", 4);
+    write(STDOUT_FILENO, "\x1b[H", 3);
+
     exit(0);
     break;
   }
@@ -62,12 +68,22 @@ void editorProcessKeyPress() {
 
 /* Output */
 
+void editorDrawRows() {
+  int y;
+  for (y = 0; y < 24; y++) {
+    write(STDOUT_FILENO, "~\r\n", 3);
+  }
+}
+
 void editorRefreshScreen() {
   // function defined in unistd.h
   // "\xib" is the byte indicating escape char (27).
   // [2J is an escape sequence that clears the entire screen.
   // 4 indicates we're writing 4 bytes to the terminal
   write(STDIN_FILENO, "\x1b[2J", 4);
+  write(STDIN_FILENO, "\x1b[H", 3);
+
+  editorDrawRows();
 
   // Reposition the curson to 1,1.
   write(STDIN_FILENO, "\x1b[H", 3);
