@@ -14,6 +14,8 @@ void die(const char* s) {
   exit(1);
 }
 
+/* Terminal */
+
 void disableRawMode() {
   if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios) == -1) die("tcsetattr");
 }
@@ -35,19 +37,49 @@ void enableRawMode() {
   if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw) == -1) die("tcsetattr");
 }
 
+char editorReadKey() {
+  int nread;
+  char c;
+
+  while ((nread = read(STDIN_FILENO, &c, 1)) != 1) {
+    if (nread == -1 && errno != EAGAIN) die("read");
+  }
+
+  return c;
+}
+
+/* Input */
+
+void editorProcessKeyPress() {
+  char c = editorReadKey();
+
+  switch (c) {
+  case CTRL_KEY('q'):
+    exit(0);
+    break;
+  }
+}
+
+/* Output */
+
+void editorRefreshScreen() {
+  // function defined in unistd.h
+  // "\xib" is the byte indicating escape char (27).
+  // [2J is an escape sequence that clears the entire screen.
+  // 4 indicates we're writing 4 bytes to the terminal
+  write(STDIN_FILENO, "\x1b[2J", 4);
+
+  // Reposition the curson to 1,1.
+  write(STDIN_FILENO, "\x1b[H", 3);
+}
+
+
 int main() {
   enableRawMode();
 
   while (1) {
-    char c = '\0';
-    if (read(STDIN_FILENO, &c, 1) == -1 && errno != EAGAIN) die("read");
-
-    if (iscntrl(c)) {
-      printf("%d\r\n", c);
-    } else {
-      printf("%d ('%c')\r\n", c, c);
-    }
-    if (c == CTRL_KEY('q')) break;
+    editorRefreshScreen();
+    editorProcessKeyPress();
   }
 
   return 0;
