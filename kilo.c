@@ -16,6 +16,7 @@
 /* Data */
 
 struct editorConfig {
+  int cursorX, cursorY;
   int screenRows;
   int screenCols;
   struct termios orig_termios;
@@ -174,8 +175,10 @@ void editorRefreshScreen() {
 
   editorDrawRows(&ab);
 
-  // Reposition the curson to 1,1.
-  abAppend(&ab, "\x1b[H", 3);
+  char buf[32];
+  snprintf(buf, sizeof(buf), "\x1b[%d;%dH", E.cursorX + 1, E.cursorY + 1);
+  abAppend(&ab, buf, strlen(buf));
+
   abAppend(&ab, "\x1b[?25h", 6); // Unhide cursor
 
   write(STDOUT_FILENO, ab.b, ab.len);
@@ -185,6 +188,8 @@ void editorRefreshScreen() {
 /* Init */
 
 void initEditor() {
+  E.cursorX = 0;
+  E.cursorY = 0;
   if (getWindowSize(&E.screenRows, &E.screenCols) == -1)
     die("getWindowSize");
 }
