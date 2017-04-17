@@ -2,6 +2,7 @@
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/ioctl.h>
 #include <termios.h>
 #include <unistd.h>
@@ -105,6 +106,17 @@ struct abuf {
 
 #define ABUF_INIT {NULL, 0}
 
+void abAppend(struct abuf *ab, const char *s, int len) {
+  char *new = realloc(ab->b, ab->len + len);
+  if (new == NULL) return;
+  memcpy(&new[ab->len], s, len);
+  ab->b = new;
+  ab->len += len;
+}
+
+void abFree(struct abuf *ab) {
+  free(ab->b);
+}
 
 /* Input */
 
@@ -123,27 +135,32 @@ void editorProcessKeyPress() {
 
 /* Output */
 
-void editorDrawRows() {
+void editorDrawRows(struct abuf *ab) {
   int y;
   for (y = 0; y < E.screenRows; y++) {
-    write(STDOUT_FILENO, "~", 1);
+    abAppend(ab, "~", 1);
 
-    if (y < E.screenRows -1) write(STDOUT_FILENO, "\r\n", 2);
+    if (y < E.screenRows -1) abAppend(ab, "\r\n", 2);
   }
 }
 
 void editorRefreshScreen() {
+  struct abuf ab = ABUF_INIT;
+
   // function defined in unistd.h
   // "\xib" is the byte indicating escape char (27).
   // [2J is an escape sequence that clears the entire screen.
   // 4 indicates we're writing 4 bytes to the terminal
-  write(STDIN_FILENO, "\x1b[2J", 4);
-  write(STDIN_FILENO, "\x1b[H", 3);
+  abAppend(&ab, "\x1b[2J", 4);
+  abAppend(&ab, "\x1b[H", 3);
 
-  editorDrawRows();
+  editorDrawRows(&ab);
 
   // Reposition the curson to 1,1.
-  write(STDIN_FILENO, "\x1b[H", 3);
+  abAppend(&ab, "\x1b[H", 3);
+
+  write(STDOUT_FILENO, ab.b, ab.len);
+  abFree(&ab);
 }
 
 /* Init */
