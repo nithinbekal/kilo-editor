@@ -140,6 +140,7 @@ void editorDrawRows(struct abuf *ab) {
   for (y = 0; y < E.screenRows; y++) {
     abAppend(ab, "~", 1);
 
+    abAppend(ab, "\x1b[K", 3);
     if (y < E.screenRows -1) abAppend(ab, "\r\n", 2);
   }
 }
@@ -153,7 +154,6 @@ void editorRefreshScreen() {
   // 4 indicates we're writing 4 bytes to the terminal
 
   abAppend(&ab, "\x1b[?25l", 6); // Hide cursor while drawing
-  abAppend(&ab, "\x1b[2J", 4);
   abAppend(&ab, "\x1b[H", 3);
 
   editorDrawRows(&ab);
