@@ -147,10 +147,12 @@ void editorDrawRows(struct abuf *ab) {
 void editorRefreshScreen() {
   struct abuf ab = ABUF_INIT;
 
-  // function defined in unistd.h
+  // write function defined in unistd.h
   // "\xib" is the byte indicating escape char (27).
   // [2J is an escape sequence that clears the entire screen.
   // 4 indicates we're writing 4 bytes to the terminal
+
+  abAppend(&ab, "\x1b[?25l", 6); // Hide cursor while drawing
   abAppend(&ab, "\x1b[2J", 4);
   abAppend(&ab, "\x1b[H", 3);
 
@@ -158,6 +160,7 @@ void editorRefreshScreen() {
 
   // Reposition the curson to 1,1.
   abAppend(&ab, "\x1b[H", 3);
+  abAppend(&ab, "\x1b[?25h", 6); // Unhide cursor
 
   write(STDOUT_FILENO, ab.b, ab.len);
   abFree(&ab);
